@@ -24,30 +24,20 @@ variable "key_pair_name" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.micro"
+  default     = "t2.micro"
 }
 
-variable "volume_size" {
-  description = "Size of the root volume in GB"
-  type        = number
-  default     = 8
-  
-  validation {
-    condition     = var.volume_size >= 8 && var.volume_size <= 100
-    error_message = "Volume size must be between 8 and 100 GB."
-  }
-}
 
 variable "vpc_id" {
   description = "VPC ID for the EC2 instance"
   type        = string
-  default     = null
+  default     = "vpc-01e1f057ff0dcdd4b"
 }
 
 variable "subnet_id" {
   description = "Subnet ID for the EC2 instance"
   type        = string
-  default     = null
+  default     = "subnet-08fbaf55e41f532db"
 }
 
 variable "tags" {
