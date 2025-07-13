@@ -1,0 +1,26 @@
+# Example terraform.tfvars file for S3 project
+# Copy this file to terraform.tfvars and modify the values as needed
+
+aws_region = "us-east-1"
+environment = "dev"
+
+# Optional: Specify bucket name (if not provided, will be auto-generated)
+# bucket_name = "sauravbhattarai-dev-bucket"
+
+# Optional: Override bucket prefix
+# bucket_prefix = "sauravbhattarai"
+
+# Optional: Disable features
+# enable_versioning = false
+# enable_encryption = false
+# enable_lifecycle = false
+# enable_logging = false
+
+# Additional tags
+tags = {
+  Owner       = "sauravbhattarai"
+  Department  = "Engineering"
+  CostCenter  = "CC001"
+  Backup      = "true"
+  Monitoring  = "true"
+} 

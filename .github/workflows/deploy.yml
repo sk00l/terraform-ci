@@ -1,0 +1,120 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+
+env:
+  TERRAFORM_VERSION: "1.5.0"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download release artifact
+        uses: dsaltares/fetch-gh-release-asset@v1
+        with:
+          file: terraform-release.zip
+          tag: ${{ github.event.release.tag_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract artifact
+        run: |
+          unzip terraform-release.zip -d terraform-release
+          ls -la terraform-release/
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init EC2
+        run: |
+          cd terraform-release/terraform/ec2-project
+          terraform init
+
+      - name: Terraform Init S3
+        run: |
+          cd terraform-release/terraform/s3-project
+          terraform init
+
+      - name: Terraform Plan EC2
+        run: |
+          cd terraform-release/terraform/ec2-project
+          terraform plan -out=ec2-plan.tfplan
+
+      - name: Terraform Plan S3
+        run: |
+          cd terraform-release/terraform/s3-project
+          terraform plan -out=s3-plan.tfplan
+
+      - name: Terraform Apply EC2
+        run: |
+          cd terraform-release/terraform/ec2-project
+          terraform apply -auto-approve ec2-plan.tfplan
+
+      - name: Terraform Apply S3
+        run: |
+          cd terraform-release/terraform/s3-project
+          terraform apply -auto-approve s3-plan.tfplan
+
+      - name: Get deployment outputs
+        run: |
+          cd terraform-release/terraform/ec2-project
+          terraform output -json > ec2-outputs.json
+          
+          cd ../s3-project
+          terraform output -json > s3-outputs.json
+
+      - name: Comment deployment results
+        uses: mshick/add-pr-comment@v1
+        with:
+          message: |
+            ## Production Deployment Complete
+            
+            **Release:** ${{ github.event.release.tag_name }}
+            **Deployed at:** ${{ github.event.release.published_at }}
+            
+            ### EC2 Instance:
+            - Instance ID: `$(jq -r '.instance_id.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
+            - Public IP: `$(jq -r '.instance_public_ip.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
+            - Instance Type: `$(jq -r '.instance_type.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
+            
+            ### S3 Bucket:
+            - Bucket Name: `$(jq -r '.bucket_name.value' terraform-release/terraform/s3-project/s3-outputs.json)`
+            - Bucket ARN: `$(jq -r '.bucket_arn.value' terraform-release/terraform/s3-project/s3-outputs.json)`
+            
+            Deployment completed successfully! 🚀
+
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    steps:
+      - name: Notify success
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "Deployment to production completed successfully!"
+          echo "Release: ${{ github.event.release.tag_name }}"
+          echo "Deployed at: ${{ github.event.release.published_at }}"
+
+      - name: Notify failure
+        if: needs.deploy.result == 'failure'
+        run: |
+          echo "Deployment to production failed!"
+          echo "Release: ${{ github.event.release.tag_name }}"
+          echo "Please check the logs for more details." 
