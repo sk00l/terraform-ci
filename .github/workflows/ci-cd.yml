@@ -57,7 +57,7 @@ jobs:
         if: failure()
         uses: GetTerminus/terraform-pr-commenter@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
           pr_number: ${{ github.event.pull_request.number }}
           comment: |
             ## TFLint Results
@@ -74,7 +74,7 @@ jobs:
         if: failure()
         uses: GetTerminus/terraform-pr-commenter@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
           pr_number: ${{ github.event.pull_request.number }}
           comment: |
             ## Terraform Format Check
@@ -91,7 +91,7 @@ jobs:
         if: failure()
         uses: GetTerminus/terraform-pr-commenter@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
           pr_number: ${{ github.event.pull_request.number }}
           comment: |
             ## Terraform Validate
@@ -134,7 +134,7 @@ jobs:
       - name: Comment tfsec results
         uses: aquasecurity/tfsec-pr-commenter-action@v1.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
 
   plan:
     name: Terraform Plan
@@ -183,7 +183,7 @@ jobs:
       - name: Comment Plan results
         uses: GetTerminus/terraform-pr-commenter@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
           pr_number: ${{ github.event.pull_request.number }}
           comment: |
             ## Terraform Plan Results
@@ -270,7 +270,7 @@ jobs:
       - name: Create tag
         uses: mathieudutour/github-tag-action@v6.1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
           default_bump: patch
           default_prerelease_bump: patch
           release_branches: main
@@ -278,7 +278,7 @@ jobs:
       - name: Create release
         uses: marvinpinto/action-automatic-releases@latest
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ github.token }}
           automatic_release_tag: ${{ steps.version.outputs.version }}
           prerelease: false
           title: Release ${{ steps.version.outputs.version }}
