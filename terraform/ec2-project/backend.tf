@@ -4,6 +4,5 @@ terraform {
     key            = "ec2-project/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "sauravbhattarai-terraform-locks"
-    encrypt        = true
   }
 } 
