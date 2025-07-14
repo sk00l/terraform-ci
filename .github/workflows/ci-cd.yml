@@ -171,14 +171,27 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('terraform/s3-project/plan.json', 'utf8');
-            // Optionally parse and format the plan here
+            const ec2Plan = fs.readFileSync('terraform/ec2-project/ec2-plan.json', 'utf8');
+            const s3Plan = fs.readFileSync('terraform/s3-project/s3-plan.json', 'utf8');
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Terraform Plan Results:\n```json\n' + plan.substring(0, 65000) + '\n```'
+              body: `## Terraform Plan Results
+
+      **EC2 Plan:**
+      \`\`\`json
+      ${ec2Plan.substring(0, 60000)}
+      \`\`\`
+
+      **S3 Plan:**
+      \`\`\`json
+      ${s3Plan.substring(0, 60000)}
+      \`\`\`
+      `
             });
+
 
   build-artifact:
     name: Build Artifact
