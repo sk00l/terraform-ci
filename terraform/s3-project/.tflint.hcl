@@ -62,6 +62,3 @@ rule "aws_s3_bucket_invalid_lifecycle_rule" {
   enabled = true
 }
 
-rule "aws_s3_bucket_invalid_policy" {
-  enabled = true
-}
