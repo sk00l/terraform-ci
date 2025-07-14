@@ -5,8 +5,8 @@ plugin "aws" {
 }
 
 config {
-  module = true
-  force  = false
+  call_module = true
+  force       = false
 }
 
 rule "terraform_deprecated_index" {
@@ -68,4 +68,4 @@ rule "aws_s3_bucket_invalid_lifecycle_rule" {
 
 rule "aws_s3_bucket_invalid_policy" {
   enabled = true
-} 
+}
