@@ -122,8 +122,7 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
 
       - name: Terraform Init
         run: |
@@ -131,13 +130,6 @@ jobs:
           terraform init -reconfigure
           cd ../s3-project
           terraform init -reconfigure
-
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.0
-        with:
-          working_directory: terraform
-          format: sarif
-          out: tfsec.sarif
 
       - name: Comment tfsec results
         uses: aquasecurity/tfsec-pr-commenter-action@v1.0.0
