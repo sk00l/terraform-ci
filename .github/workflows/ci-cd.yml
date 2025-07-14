@@ -243,6 +243,7 @@ jobs:
             **Artifact:** terraform-artifact-${{ steps.version.outputs.version }}.zip
             
             This artifact can be deployed to the dev environment for testing.
+          repo-token: ${{ github.token }}
 
   release:
     name: Create Release
