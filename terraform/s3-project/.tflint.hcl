@@ -50,9 +50,6 @@ rule "terraform_standard_module_structure" {
 }
 
 
-rule "aws_s3_bucket_invalid_region" {
-  enabled = true
-}
 
 rule "aws_s3_bucket_invalid_versioning" {
   enabled = true
