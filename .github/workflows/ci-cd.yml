@@ -155,16 +155,19 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-
-      - name: Terraform Init
+      - name: Terraform Plan EC2
         run: |
           cd terraform/ec2-project
           terraform init
-          cd ../s3-project
-          terraform init
+          terraform plan -out=ec2-plan.tfplan
+          terraform show -json ec2-plan.tfplan > ec2-plan.json
 
-      - name: Terraform Plan (JSON)
-        run: terraform plan -out=tfplan && terraform show -json tfplan > plan.json
+      - name: Terraform Plan S3
+        run: |
+          cd terraform/s3-project
+          terraform init
+          terraform plan -out=s3-plan.tfplan
+          terraform show -json s3-plan.tfplan > s3-plan.json
 
       - name: Comment Plan Results
         uses: actions/github-script@v7
@@ -184,6 +187,7 @@ jobs:
                     '**S3 Plan:**\n' +
                     '```json\n' + s3Plan.substring(0, 60000) + '\n```'
             });
+
 
 
   build-artifact:
