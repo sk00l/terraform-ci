@@ -128,9 +128,9 @@ jobs:
       - name: Terraform Init
         run: |
           cd terraform/ec2-project
-          terraform init
+          terraform init -reconfigure
           cd ../s3-project
-          terraform init
+          terraform init -reconfigure
 
       - name: Run tfsec
         uses: aquasecurity/tfsec-action@v1.0.0
