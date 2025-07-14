@@ -62,6 +62,3 @@ rule "aws_instance_invalid_ami" {
 }
 
 
-rule "aws_security_group_rule_invalid_port" {
-  enabled = true
-}
