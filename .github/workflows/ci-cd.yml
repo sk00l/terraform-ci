@@ -255,7 +255,7 @@ jobs:
     needs: [lint, security-scan]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
       issues: write
     steps:
