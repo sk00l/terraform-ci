@@ -25,7 +25,7 @@ output "instance_public_dns" {
 
 output "security_group_id" {
   description = "ID of the security group"
-  value       = aws_security_group.ec2_sg.id
+  value       = local.security_group_id
 }
 
 output "iam_role_arn" {
@@ -38,20 +38,13 @@ output "iam_instance_profile_arn" {
   value       = aws_iam_instance_profile.ec2_profile.arn
 }
 
-output "cloudwatch_log_group_name" {
-  description = "Name of the CloudWatch log group"
-  value       = aws_cloudwatch_log_group.ec2_logs.name
-}
+
 
 output "instance_tags" {
   description = "Tags applied to the EC2 instance"
   value       = aws_instance.main.tags
 }
 
-output "availability_zone" {
-  description = "Availability zone of the EC2 instance"
-  value       = aws_instance.main.availability_zone
-}
 
 output "subnet_id" {
   description = "Subnet ID where the EC2 instance is deployed"
@@ -60,12 +53,12 @@ output "subnet_id" {
 
 output "vpc_id" {
   description = "VPC ID where the EC2 instance is deployed"
-  value       = data.aws_vpc.default.id
+  value       = var.vpc_id
 }
 
 output "ami_id" {
   description = "AMI ID used for the EC2 instance"
-  value       = aws_instance.main.ami
+  value       = local.ami_id
 }
 
 output "instance_type" {
@@ -73,11 +66,4 @@ output "instance_type" {
   value       = aws_instance.main.instance_type
 }
 
-output "root_block_device" {
-  description = "Root block device configuration"
-  value = {
-    volume_size = aws_instance.main.root_block_device[0].volume_size
-    volume_type = aws_instance.main.root_block_device[0].volume_type
-    encrypted   = aws_instance.main.root_block_device[0].encrypted
-  }
-} 
+

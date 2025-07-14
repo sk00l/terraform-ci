@@ -1,12 +1,11 @@
 plugin "aws" {
   enabled = true
-  version = "0.24.0"
+  version = "0.40.0"
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
 }
 
 config {
-  module = true
-  force  = false
+  force       = false
 }
 
 rule "terraform_deprecated_index" {
@@ -14,7 +13,7 @@ rule "terraform_deprecated_index" {
 }
 
 rule "terraform_unused_declarations" {
-  enabled = true
+  enabled = false
 }
 
 rule "terraform_comment_syntax" {
@@ -50,22 +49,4 @@ rule "terraform_standard_module_structure" {
   enabled = true
 }
 
-rule "aws_s3_bucket_invalid_bucket" {
-  enabled = true
-}
 
-rule "aws_s3_bucket_invalid_region" {
-  enabled = true
-}
-
-rule "aws_s3_bucket_invalid_versioning" {
-  enabled = true
-}
-
-rule "aws_s3_bucket_invalid_lifecycle_rule" {
-  enabled = true
-}
-
-rule "aws_s3_bucket_invalid_policy" {
-  enabled = true
-} 

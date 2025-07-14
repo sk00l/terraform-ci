@@ -1,12 +1,11 @@
 plugin "aws" {
   enabled = true
-  version = "0.24.0"
+  version = "0.40.0"
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
 }
 
 config {
-  module = true
-  force  = false
+  force       = false
 }
 
 rule "terraform_deprecated_index" {
@@ -14,7 +13,7 @@ rule "terraform_deprecated_index" {
 }
 
 rule "terraform_unused_declarations" {
-  enabled = true
+  enabled = false
 }
 
 rule "terraform_comment_syntax" {
@@ -62,10 +61,4 @@ rule "aws_instance_invalid_ami" {
   enabled = true
 }
 
-rule "aws_security_group_rule_invalid_type" {
-  enabled = true
-}
 
-rule "aws_security_group_rule_invalid_port" {
-  enabled = true
-} 

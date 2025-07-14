@@ -9,13 +9,16 @@ on:
 
 env:
   TERRAFORM_VERSION: "1.5.0"
-  TFLINT_VERSION: "0.44.1"
+
   AWS_REGION: "us-east-1"
 
 jobs:
   lint:
     name: Lint and Validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,13 +32,6 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-
-      - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v4
-        with:
-          tflint_version: ${{ env.TFLINT_VERSION }}
 
       - name: Terraform Init
         run: |
@@ -43,6 +39,11 @@ jobs:
           terraform init
           cd ../s3-project
           terraform init
+
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: TFLint
         run: |
@@ -55,13 +56,15 @@ jobs:
 
       - name: Comment TFLint results
         if: failure()
-        uses: GetTerminus/terraform-pr-commenter@v1
+        uses: actions/github-script@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ github.event.pull_request.number }}
-          comment: |
-            ## TFLint Results
-            TFLint validation failed. Please fix the issues before merging.
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## TFLint Results\nTFLint validation failed. Please fix the issues before merging.'
+            })
 
       - name: Terraform Format Check
         run: |
@@ -72,13 +75,15 @@ jobs:
 
       - name: Comment Format results
         if: failure()
-        uses: GetTerminus/terraform-pr-commenter@v1
+        uses: actions/github-script@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ github.event.pull_request.number }}
-          comment: |
-            ## Terraform Format Check
-            Terraform formatting check failed. Please run `terraform fmt` to fix formatting issues.
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Terraform Format Check\nTerraform formatting check failed. Please run `terraform fmt` to fix formatting issues.'
+            })
 
       - name: Terraform Validate
         run: |
@@ -89,13 +94,16 @@ jobs:
 
       - name: Comment Validate results
         if: failure()
-        uses: GetTerminus/terraform-pr-commenter@v1
+        uses: actions/github-script@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ github.event.pull_request.number }}
-          comment: |
-            ## Terraform Validate
-            Terraform validation failed. Please fix the configuration errors.
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Terraform Validate\nTerraform validation failed. Please fix the configuration errors.'
+            })
+
 
   security-scan:
     name: Security Scan
@@ -114,33 +122,29 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
 
       - name: Terraform Init
         run: |
           cd terraform/ec2-project
-          terraform init
+          terraform init -reconfigure
           cd ../s3-project
-          terraform init
-
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.0
-        with:
-          working_directory: terraform
-          format: sarif
-          out: tfsec.sarif
+          terraform init -reconfigure
 
       - name: Comment tfsec results
         uses: aquasecurity/tfsec-pr-commenter-action@v1.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
 
   plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
     needs: [lint, security-scan]
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -154,55 +158,51 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-
-      - name: Terraform Init
-        run: |
-          cd terraform/ec2-project
-          terraform init
-          cd ../s3-project
-          terraform init
 
       - name: Terraform Plan EC2
-        id: plan-ec2
         run: |
           cd terraform/ec2-project
+          terraform init
           terraform plan -out=ec2-plan.tfplan
           terraform show -json ec2-plan.tfplan > ec2-plan.json
-        continue-on-error: true
 
       - name: Terraform Plan S3
-        id: plan-s3
         run: |
           cd terraform/s3-project
+          terraform init
           terraform plan -out=s3-plan.tfplan
           terraform show -json s3-plan.tfplan > s3-plan.json
-        continue-on-error: true
 
-      - name: Comment Plan results
-        uses: GetTerminus/terraform-pr-commenter@v1
+      - name: Comment Plan Results
+        uses: actions/github-script@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ github.event.pull_request.number }}
-          comment: |
-            ## Terraform Plan Results
-            
-            ### EC2 Project Changes:
-            ```json
-            ${{ steps.plan-ec2.outputs.stdout }}
-            ```
-            
-            ### S3 Project Changes:
-            ```json
-            ${{ steps.plan-s3.outputs.stdout }}
-            ```
+          script: |
+            const fs = require('fs');
+            const ec2Plan = fs.readFileSync('terraform/ec2-project/ec2-plan.json', 'utf8');
+            const s3Plan = fs.readFileSync('terraform/s3-project/s3-plan.json', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Terraform Plan Results\n\n' +
+                    '**EC2 Plan:**\n' +
+                    '```json\n' + ec2Plan.substring(0, 60000) + '\n```\n\n' +
+                    '**S3 Plan:**\n' +
+                    '```json\n' + s3Plan.substring(0, 60000) + '\n```'
+            });
+
+
 
   build-artifact:
     name: Build Artifact
     runs-on: ubuntu-latest
     needs: [lint, security-scan, plan]
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -237,7 +237,7 @@ jobs:
           path: terraform-artifact.zip
           retention-days: 30
 
-      - name: Comment artifact info
+      - name: Comment artifact inffo
         uses: mshick/add-pr-comment@v1
         with:
           message: |
@@ -247,6 +247,7 @@ jobs:
             **Artifact:** terraform-artifact-${{ steps.version.outputs.version }}.zip
             
             This artifact can be deployed to the dev environment for testing.
+          repo-token: ${{ github.token }}
 
   release:
     name: Create Release
@@ -270,7 +271,7 @@ jobs:
       - name: Create tag
         uses: mathieudutour/github-tag-action@v6.1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
           default_bump: patch
           default_prerelease_bump: patch
           release_branches: main
@@ -278,7 +279,7 @@ jobs:
       - name: Create release
         uses: marvinpinto/action-automatic-releases@latest
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ github.token }}
           automatic_release_tag: ${{ steps.version.outputs.version }}
           prerelease: false
           title: Release ${{ steps.version.outputs.version }}
