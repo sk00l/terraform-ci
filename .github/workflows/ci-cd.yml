@@ -257,14 +257,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
+      
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-  
-      - name: Setup GitHub CLI
-        uses: cli/gh-action@v2
   
       - name: Generate version
         id: version
@@ -274,18 +272,20 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_ENV
   
-      - name: Create release artifact (zip)
+      - name: Create release artifact
         run: |
           mkdir -p release-artifacts
           cp -r terraform release-artifacts/
           cp -r scripts release-artifacts/
           cp README.md release-artifacts/
-          
+  
           cd release-artifacts
           zip -r terraform-release-${{ steps.version.outputs.version }}.zip .
-          mv terraform-release-${{ steps.version.outputs.version }}.zip ../terraform-release.zip
+          cd ..
   
-      - name: Create GitHub Release (with gh CLI)
+          mv release-artifacts/terraform-release-${{ steps.version.outputs.version }}.zip terraform-release.zip
+  
+      - name: Publish GitHub Release with Artifact
         run: |
           gh release create ${{ steps.version.outputs.version }} terraform-release.zip \
             --title "Release ${{ steps.version.outputs.version }}" \
@@ -294,10 +294,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
-      - name: Upload release artifact to workflow artifacts (optional)
+      - name: Upload artifact for internal use (optional)
         uses: actions/upload-artifact@v4
         with:
           name: terraform-release-${{ steps.version.outputs.version }}
           path: terraform-release.zip
           retention-days: 90
-
