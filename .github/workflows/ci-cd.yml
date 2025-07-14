@@ -178,18 +178,11 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## Terraform Plan Results
-
-      **EC2 Plan:**
-      \`\`\`json
-      ${ec2Plan.substring(0, 60000)}
-      \`\`\`
-
-      **S3 Plan:**
-      \`\`\`json
-      ${s3Plan.substring(0, 60000)}
-      \`\`\`
-      `
+              body: '## Terraform Plan Results\n\n' +
+                    '**EC2 Plan:**\n' +
+                    '```json\n' + ec2Plan.substring(0, 60000) + '\n```\n\n' +
+                    '**S3 Plan:**\n' +
+                    '```json\n' + s3Plan.substring(0, 60000) + '\n```'
             });
 
 
