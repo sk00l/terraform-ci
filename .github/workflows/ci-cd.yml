@@ -16,6 +16,9 @@ jobs:
   lint:
     name: Lint and Validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -100,6 +103,7 @@ jobs:
               repo: context.repo.repo,
               body: '## Terraform Validate\nTerraform validation failed. Please fix the configuration errors.'
             })
+
 
   security-scan:
     name: Security Scan

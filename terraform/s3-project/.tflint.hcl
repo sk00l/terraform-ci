@@ -5,7 +5,6 @@ plugin "aws" {
 }
 
 config {
-  call_module = true
   force       = false
 }
 
