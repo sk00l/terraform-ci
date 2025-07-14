@@ -163,45 +163,22 @@ jobs:
           cd ../s3-project
           terraform init
 
-      - name: Terraform Plan EC2
-        id: plan-ec2
-        run: |
-          cd terraform/ec2-project
-          terraform plan -out=ec2-plan.tfplan
-          terraform show -json ec2-plan.tfplan > ec2-plan.json
-        continue-on-error: true
+      - name: Terraform Plan (JSON)
+        run: terraform plan -out=tfplan && terraform show -json tfplan > plan.json
 
-      - name: Terraform Plan S3
-        id: plan-s3
-        run: |
-          cd terraform/s3-project
-          terraform plan -out=s3-plan.tfplan
-          terraform show -json s3-plan.tfplan > s3-plan.json
-        continue-on-error: true
-
-      - name: Comment Plan results
+      - name: Comment Plan Results
         uses: actions/github-script@v7
         with:
           script: |
-            const ec2Plan = '${{ steps.plan-ec2.outputs.stdout || 'No changes' }}';
-            const s3Plan = '${{ steps.plan-s3.outputs.stdout || 'No changes' }}';
-            
+            const fs = require('fs');
+            const plan = fs.readFileSync('terraform/s3-project/plan.json', 'utf8');
+            // Optionally parse and format the plan here
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## Terraform Plan Results
-            
-            ### EC2 Project Changes:
-            \`\`\`json
-            ${ec2Plan}
-            \`\`\`
-            
-            ### S3 Project Changes:
-            \`\`\`json
-            ${s3Plan}
-            \`\`\``
-            })
+              body: 'Terraform Plan Results:\n```json\n' + plan.substring(0, 65000) + '\n```'
+            });
 
   build-artifact:
     name: Build Artifact
