@@ -4,6 +4,10 @@ on:
   release:
     types: [published]
 
+permissions:
+  pull-requests: write
+  contents: read
+
 env:
   TERRAFORM_VERSION: "1.5.0"
   AWS_REGION: "us-east-1"
@@ -13,6 +17,12 @@ jobs:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      ec2_instance_id: ${{ steps.extract.outputs.ec2_instance_id }}
+      ec2_ip: ${{ steps.extract.outputs.ec2_ip }}
+      ec2_type: ${{ steps.extract.outputs.ec2_type }}
+      s3_name: ${{ steps.extract.outputs.s3_name }}
+      s3_arn: ${{ steps.extract.outputs.s3_arn }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,65 +56,62 @@ jobs:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
       - name: Terraform Init EC2
-        run: |
-          cd terraform-release/terraform/ec2-project
-          terraform init
+        run: cd terraform-release/terraform/ec2-project && terraform init
 
       - name: Terraform Init S3
-        run: |
-          cd terraform-release/terraform/s3-project
-          terraform init
+        run: cd terraform-release/terraform/s3-project && terraform init
 
       - name: Terraform Plan EC2
-        run: |
-          cd terraform-release/terraform/ec2-project
-          terraform plan -out=ec2-plan.tfplan
+        run: cd terraform-release/terraform/ec2-project && terraform plan -out=ec2-plan.tfplan
 
       - name: Terraform Plan S3
-        run: |
-          cd terraform-release/terraform/s3-project
-          terraform plan -out=s3-plan.tfplan
+        run: cd terraform-release/terraform/s3-project && terraform plan -out=s3-plan.tfplan
 
       - name: Terraform Apply EC2
-        run: |
-          cd terraform-release/terraform/ec2-project
-          terraform apply -auto-approve ec2-plan.tfplan
+        run: cd terraform-release/terraform/ec2-project && terraform apply -auto-approve ec2-plan.tfplan
 
       - name: Terraform Apply S3
-        run: |
-          cd terraform-release/terraform/s3-project
-          terraform apply -auto-approve s3-plan.tfplan
+        run: cd terraform-release/terraform/s3-project && terraform apply -auto-approve s3-plan.tfplan
 
       - name: Get deployment outputs
         run: |
           cd terraform-release/terraform/ec2-project
           terraform output -json > ec2-outputs.json
-          
+
           cd ../s3-project
           terraform output -json > s3-outputs.json
 
+      - name: Extract outputs for comment
+        id: extract
+        run: |
+          echo "ec2_instance_id=$(jq -r '.instance_id.value' terraform-release/terraform/ec2-project/ec2-outputs.json)" >> $GITHUB_OUTPUT
+          echo "ec2_ip=$(jq -r '.instance_public_ip.value' terraform-release/terraform/ec2-project/ec2-outputs.json)" >> $GITHUB_OUTPUT
+          echo "ec2_type=$(jq -r '.instance_type.value' terraform-release/terraform/ec2-project/ec2-outputs.json)" >> $GITHUB_OUTPUT
+
+          echo "s3_name=$(jq -r '.bucket_name.value' terraform-release/terraform/s3-project/s3-outputs.json)" >> $GITHUB_OUTPUT
+          echo "s3_arn=$(jq -r '.bucket_arn.value' terraform-release/terraform/s3-project/s3-outputs.json)" >> $GITHUB_OUTPUT
+
       - name: Add PR comment
-        uses: mshick/add-pr-comment@v1
+        uses: mshick/add-pr-comment@v2.8.2
         with:
           message: |
-            ## Production Deployment Complete
+            ## 🚀 Production Deployment Complete
 
-            **Release:** v0.2.3  
-            **Deployed at:** ${{ steps.timestamp.outputs.time }}
+            **Release:** ${{ github.event.release.tag_name }}  
+            **Deployed at:** ${{ github.event.release.published_at }}
 
             ### EC2 Instance:
-            - Instance ID: `$(jq -r '.instance_id.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
-            - Public IP: `$(jq -r '.instance_public_ip.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
-            - Instance Type: `$(jq -r '.instance_type.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
+            - Instance ID: `${{ steps.extract.outputs.ec2_instance_id }}`
+            - Public IP: `${{ steps.extract.outputs.ec2_ip }}`
+            - Instance Type: `${{ steps.extract.outputs.ec2_type }}`
 
             ### S3 Bucket:
-            - Bucket Name: `$(jq -r '.bucket_name.value' terraform-release/terraform/s3-project/s3-outputs.json)`
-            - Bucket ARN: `$(jq -r '.bucket_arn.value' terraform-release/terraform/s3-project/s3-outputs.json)`
+            - Bucket Name: `${{ steps.extract.outputs.s3_name }}`
+            - Bucket ARN: `${{ steps.extract.outputs.s3_arn }}`
 
-            Deployment completed successfully! 🚀
+            ✅ Deployment completed successfully!
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           allow-repeats: false
-
 
   notify:
     name: Notify Deployment
@@ -115,13 +122,13 @@ jobs:
       - name: Notify success
         if: needs.deploy.result == 'success'
         run: |
-          echo "Deployment to production completed successfully!"
+          echo "✅ Deployment to production completed!"
           echo "Release: ${{ github.event.release.tag_name }}"
           echo "Deployed at: ${{ github.event.release.published_at }}"
 
       - name: Notify failure
         if: needs.deploy.result == 'failure'
         run: |
-          echo "Deployment to production failed!"
+          echo "❌ Deployment to production failed!"
           echo "Release: ${{ github.event.release.tag_name }}"
-          echo "Please check the logs for more details." 
+          echo "Please check the logs for details."
