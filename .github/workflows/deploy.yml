@@ -83,25 +83,28 @@ jobs:
           cd ../s3-project
           terraform output -json > s3-outputs.json
 
-      - name: Comment deployment results
+      - name: Add PR comment
         uses: mshick/add-pr-comment@v1
         with:
           message: |
             ## Production Deployment Complete
-            
-            **Release:** ${{ github.event.release.tag_name }}
-            **Deployed at:** ${{ github.event.release.published_at }}
-            
+
+            **Release:** v0.2.3  
+            **Deployed at:** ${{ steps.timestamp.outputs.time }}
+
             ### EC2 Instance:
             - Instance ID: `$(jq -r '.instance_id.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
             - Public IP: `$(jq -r '.instance_public_ip.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
             - Instance Type: `$(jq -r '.instance_type.value' terraform-release/terraform/ec2-project/ec2-outputs.json)`
-            
+
             ### S3 Bucket:
             - Bucket Name: `$(jq -r '.bucket_name.value' terraform-release/terraform/s3-project/s3-outputs.json)`
             - Bucket ARN: `$(jq -r '.bucket_arn.value' terraform-release/terraform/s3-project/s3-outputs.json)`
-            
+
             Deployment completed successfully! 🚀
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          allow-repeats: false
+
 
   notify:
     name: Notify Deployment
