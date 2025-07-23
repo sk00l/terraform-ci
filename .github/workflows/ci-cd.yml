@@ -148,7 +148,7 @@ jobs:
           chmod +x commenter
           ./commenter
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          INPUT_GITHUB_TOKEN: ${{ github.token }}
 
 
 
