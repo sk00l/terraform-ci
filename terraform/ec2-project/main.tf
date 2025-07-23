@@ -8,10 +8,7 @@ terraform {
   }
 }
 
-resource "random_string" "suffix" {
-  length  = 4
-  special = false
-}
+
 
 
 provider "aws" {
@@ -62,7 +59,7 @@ resource "aws_iam_role" "ec2_role" {
 
 # IAM Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "sauravbhattarai-ec2-profile-${random_string.suffix.result}"
+  name = "sauravbhattarai-ec2-profile-11"
   role = aws_iam_role.ec2_role.name
 
   tags = merge(
