@@ -26,9 +26,9 @@ provider "aws" {
   }
 }
 
-# Use specific AMI ID and security group
+
 locals {
-  ami_id            = "ami-0150ccaf51ab55a51" # Your specific AMI ID
+  ami_id            = "ami-0150ccaf51ab55a51"
   security_group_id = "sg-0f32672f66ec5ea03"
 }
 
