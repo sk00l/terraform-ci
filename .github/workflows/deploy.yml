@@ -28,8 +28,9 @@ jobs:
         uses: dsaltares/fetch-gh-release-asset@1.1.2
         with:
           file: terraform-release.zip
-          tag: ${{ github.event.release.tag_name }}
-          token: ${{ github.token }}
+          version: ${{ github.event.release.tag_name }}  # ✅ CORRECT
+          token: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Extract artifact
         run: |
