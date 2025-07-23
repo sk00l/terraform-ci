@@ -25,7 +25,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Download release artifact
-        uses: dsaltares/fetch-gh-release-asset@v1
+        uses: dsaltares/fetch-gh-release-asset@latest
         with:
           file: terraform-release.zip
           tag: ${{ github.event.release.tag_name }}

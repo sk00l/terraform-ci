@@ -249,7 +249,6 @@ jobs:
             This artifact can be deployed to the dev environment for testing.
           repo-token: ${{ github.token }}
 
-
   release:
     name: Create Release
     runs-on: ubuntu-latest
@@ -257,6 +256,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
+      pull-requests: write
+      issues: write
       
     steps:
       - name: Checkout code
