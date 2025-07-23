@@ -174,22 +174,31 @@ jobs:
           terraform show -json s3-plan.tfplan > s3-plan.json
 
       - name: Comment Plan Results
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const ec2Plan = fs.readFileSync('terraform/ec2-project/ec2-plan.json', 'utf8');
-            const s3Plan = fs.readFileSync('terraform/s3-project/s3-plan.json', 'utf8');
+            const path = require('path');
+
+            function readPlan(filePath) {
+              try {
+                return fs.readFileSync(filePath, 'utf8').substring(0, 60000);
+              } catch (err) {
+                return `⚠️ Failed to read ${filePath}: ${err.message}`;
+              }
+            }
+
+            const ec2Plan = readPlan('terraform/ec2-project/ec2-plan.json');
+            const s3Plan = readPlan('terraform/s3-project/s3-plan.json');
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## Terraform Plan Results\n\n' +
-                    '**EC2 Plan:**\n' +
-                    '```json\n' + ec2Plan.substring(0, 60000) + '\n```\n\n' +
-                    '**S3 Plan:**\n' +
-                    '```json\n' + s3Plan.substring(0, 60000) + '\n```'
+              body: `## Terraform Plan Results\n\n` +
+                    `### EC2 Plan:\n\`\`\`json\n${ec2Plan}\n\`\`\`\n\n` +
+                    `### S3 Plan:\n\`\`\`json\n${s3Plan}\n\`\`\``
             });
 
 
