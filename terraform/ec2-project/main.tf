@@ -32,7 +32,6 @@ locals {
   security_group_id = "sg-0f32672f66ec5ea03"
 }
 
-# IAM Role for EC2
 resource "aws_iam_role" "ec2_role" {
   name = "sauravbhattarai-gitops-ec2-role"
 
