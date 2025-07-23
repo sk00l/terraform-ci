@@ -24,13 +24,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Download release artifact
-        uses: dsaltares/fetch-gh-release-asset@1.1.2
-        with:
-          file: terraform-release.zip
-          version: ${{ github.event.release.tag_name }}  # ✅ CORRECT
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh -y
 
+      - name: Download release artifact
+        run: |
+          gh release download ${{ github.event.release.tag_name }} \
+            --repo ${{ github.repository }} \
+            --pattern "terraform-release.zip"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract artifact
         run: |
