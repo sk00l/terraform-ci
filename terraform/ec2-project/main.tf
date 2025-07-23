@@ -79,6 +79,8 @@ resource "aws_instance" "main" {
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
   subnet_id              = var.subnet_id
 
+  associate_public_ip_address = true
+
   tags = merge(
     local.common_tags,
     {
