@@ -31,7 +31,7 @@ locals {
 
 # IAM Role for EC2
 resource "aws_iam_role" "ec2_role" {
-  name = "sauravbhattaraii-ec2-role"
+  name = "sauravbhattarai-gitops-ec2-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
