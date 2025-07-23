@@ -249,21 +249,22 @@ jobs:
             This artifact can be deployed to the dev environment for testing.
           repo-token: ${{ github.token }}
 
-release:
-  name: Create Release
-  runs-on: ubuntu-latest
-  needs: [lint, security-scan]
-  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  permissions:
-    contents: write
-    pull-requests: write
-    issues: write
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [lint, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+  
       - name: Generate version
         id: version
         run: |
@@ -271,53 +272,32 @@ release:
           VERSION=$(./scripts/version.sh)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Create tag
-        uses: mathieudutour/github-tag-action@v6.1
-        with:
-          github_token: ${{ github.token }}
-          default_bump: patch
-          default_prerelease_bump: patch
-          release_branches: main
-
-      - name: Create release artifact (zip)
+  
+      - name: Create release artifact
         run: |
           mkdir -p release-artifacts
           cp -r terraform release-artifacts/
           cp -r scripts release-artifacts/
           cp README.md release-artifacts/
-
-          # Create zip file
+  
           cd release-artifacts
           zip -r terraform-release-${{ steps.version.outputs.version }}.zip .
           cd ..
-
+  
           mv release-artifacts/terraform-release-${{ steps.version.outputs.version }}.zip terraform-release.zip
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: Release ${{ steps.version.outputs.version }}
-          draft: false
-          prerelease: false
+  
+      - name: Publish GitHub Release with Artifact
+        run: |
+          gh release create ${{ steps.version.outputs.version }} terraform-release.zip \
+            --title "Release ${{ steps.version.outputs.version }}" \
+            --notes "Automated release created by CI/CD pipeline." \
+            --target main
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload Release Artifact to GitHub Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: terraform-release.zip
-          asset_name: terraform-release-${{ steps.version.outputs.version }}.zip
-          asset_content_type: application/zip
-
-      - name: Upload artifact to workflow (optional)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+      - name: Upload artifact for internal use (optional)
         uses: actions/upload-artifact@v4
         with:
           name: terraform-release-${{ steps.version.outputs.version }}
           path: terraform-release.zip
           retention-days: 90
-
-
