@@ -66,24 +66,27 @@ jobs:
               body: '## TFLint Results\nTFLint validation failed. Please fix the issues before merging.'
             })
 
-      - name: Terraform Format Check
-        run: |
-          cd terraform/ec2-project
-          terraform fmt -check -recursive
-          cd ../s3-project
-          terraform fmt -check -recursive
-
-      - name: Comment Format results
+      - name: Comment TFLint results
         if: failure()
-        uses: actions/github-script@v7
+        uses: mshick/add-pr-comment@v2.8.2
         with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '## Terraform Format Check\nTerraform formatting check failed. Please run `terraform fmt` to fix formatting issues.'
-            })
+          message: |
+            ## ❌ TFLint Failed
+            TFLint validation failed. Please fix the issues before merging.
+          repo-token: ${{ github.token }}
+          allow-repeats: false
+
+
+      - name: Comment TFLint results
+        if: failure()
+        uses: mshick/add-pr-comment@v2.8.2
+        with:
+          message: |
+            ## ❌ TFLint Failed
+            TFLint validation failed. Please fix the issues before merging.
+          repo-token: ${{ github.token }}
+          allow-repeats: false
+
 
       - name: Terraform Validate
         run: |
@@ -92,23 +95,25 @@ jobs:
           cd ../s3-project
           terraform validate
 
-      - name: Comment Validate results
+      - name: Comment Terraform Validate
         if: failure()
-        uses: actions/github-script@v7
+        uses: mshick/add-pr-comment@v2
         with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '## Terraform Validate\nTerraform validation failed. Please fix the configuration errors.'
-            })
+          message: |
+            ## ❌ Terraform Validate Failed
+            Terraform validation failed. Please fix the configuration errors.
+          repo-token: ${{ github.token }}
+          allow-repeats: false
+
 
 
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: lint
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -123,7 +128,6 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-
       - name: Terraform Init
         run: |
           cd terraform/ec2-project
@@ -131,10 +135,22 @@ jobs:
           cd ../s3-project
           terraform init -reconfigure
 
-      - name: Comment tfsec results
-        uses: aquasecurity/tfsec-pr-commenter-action@v1.0.0
-        with:
-          github_token: ${{ github.token }}
+      - name: Run tfsec
+        run: |
+          curl -sL https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec-linux-amd64 -o tfsec
+          chmod +x tfsec
+          sudo mv tfsec /usr/local/bin/
+          tfsec --out=results.json --format=json --soft-fail terraform/
+
+      - name: Run tfsec commenter
+        run: |
+          curl -sL https://github.com/aquasecurity/tfsec-pr-commenter-action/releases/download/v1.3.1/commenter-linux-amd64 -o commenter
+          chmod +x commenter
+          ./commenter
+        env:
+          INPUT_GITHUB_TOKEN: ${{ github.token }}
+
+
 
   plan:
     name: Terraform Plan
@@ -164,14 +180,14 @@ jobs:
           cd terraform/ec2-project
           terraform init
           terraform plan -out=ec2-plan.tfplan
-          terraform show -json ec2-plan.tfplan > ec2-plan.json
+          terraform show -no-color ec2-plan.tfplan > ec2-plan.txt
 
       - name: Terraform Plan S3
         run: |
           cd terraform/s3-project
           terraform init
           terraform plan -out=s3-plan.tfplan
-          terraform show -json s3-plan.tfplan > s3-plan.json
+          terraform show -no-color s3-plan.tfplan > s3-plan.txt
 
       - name: Comment Plan Results
         if: github.event_name == 'pull_request'
@@ -179,7 +195,6 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const path = require('path');
 
             function readPlan(filePath) {
               try {
@@ -189,17 +204,18 @@ jobs:
               }
             }
 
-            const ec2Plan = readPlan('terraform/ec2-project/ec2-plan.json');
-            const s3Plan = readPlan('terraform/s3-project/s3-plan.json');
+            const ec2Plan = readPlan('terraform/ec2-project/ec2-plan.txt');
+            const s3Plan = readPlan('terraform/s3-project/s3-plan.txt');
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `## Terraform Plan Results\n\n` +
-                    `### EC2 Plan:\n\`\`\`json\n${ec2Plan}\n\`\`\`\n\n` +
-                    `### S3 Plan:\n\`\`\`json\n${s3Plan}\n\`\`\``
+                    `### EC2 Plan:\n\`\`\`\n${ec2Plan}\n\`\`\`\n\n` +
+                    `### S3 Plan:\n\`\`\`\n${s3Plan}\n\`\`\``
             });
+
 
 
 
