@@ -131,10 +131,22 @@ jobs:
           cd ../s3-project
           terraform init -reconfigure
 
-      - name: Comment tfsec results
-        uses: aquasecurity/tfsec-pr-commenter-action@v1.0.0
-        with:
-          github_token: ${{ github.token }}
+      - name: Run tfsec and output results
+        run: |
+          curl -sL https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec-linux-amd64 -o tfsec
+          chmod +x tfsec
+          sudo mv tfsec /usr/local/bin/
+          tfsec --out=results.json --format=json --soft-fail terraform/
+
+      - name: Run commenter
+        run: |
+          curl -sL https://github.com/aquasecurity/tfsec-pr-commenter-action/releases/download/v1.3.1/commenter-linux-amd64 -o commenter
+          chmod +x commenter
+          sudo mv commenter /usr/local/bin/
+          commenter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   plan:
     name: Terraform Plan
