@@ -8,6 +8,9 @@ terraform {
   }
 }
 
+
+
+
 provider "aws" {
   region = var.aws_region
 
@@ -56,7 +59,7 @@ resource "aws_iam_role" "ec2_role" {
 
 # IAM Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "sauravbhattarai-ec2-profile"
+  name = "sauravbhattarai-ec2-profile-11"
   role = aws_iam_role.ec2_role.name
 
   tags = merge(
