@@ -180,14 +180,14 @@ jobs:
           cd terraform/ec2-project
           terraform init
           terraform plan -out=ec2-plan.tfplan
-          terraform show -json ec2-plan.tfplan > ec2-plan.json
+          terraform show -no-color ec2-plan.tfplan > ec2-plan.txt
 
       - name: Terraform Plan S3
         run: |
           cd terraform/s3-project
           terraform init
           terraform plan -out=s3-plan.tfplan
-          terraform show -json s3-plan.tfplan > s3-plan.json
+          terraform show -no-color s3-plan.tfplan > s3-plan.txt
 
       - name: Comment Plan Results
         if: github.event_name == 'pull_request'
@@ -195,7 +195,6 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const path = require('path');
 
             function readPlan(filePath) {
               try {
@@ -205,17 +204,18 @@ jobs:
               }
             }
 
-            const ec2Plan = readPlan('terraform/ec2-project/ec2-plan.json');
-            const s3Plan = readPlan('terraform/s3-project/s3-plan.json');
+            const ec2Plan = readPlan('terraform/ec2-project/ec2-plan.txt');
+            const s3Plan = readPlan('terraform/s3-project/s3-plan.txt');
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `## Terraform Plan Results\n\n` +
-                    `### EC2 Plan:\n\`\`\`json\n${ec2Plan}\n\`\`\`\n\n` +
-                    `### S3 Plan:\n\`\`\`json\n${s3Plan}\n\`\`\``
+                    `### EC2 Plan:\n\`\`\`\n${ec2Plan}\n\`\`\`\n\n` +
+                    `### S3 Plan:\n\`\`\`\n${s3Plan}\n\`\`\``
             });
+
 
 
 
