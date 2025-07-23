@@ -41,7 +41,7 @@ variable "subnet_id" {
 }
 
 variable "tags" {
-  description = "Additional tags for resources"
+  description = "additional tags for resources"
   type        = map(string)
   default     = {}
 }
