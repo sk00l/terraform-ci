@@ -16,7 +16,7 @@ locals {
 
 }
 
-# Random string for bucket name uniqueness
+
 resource "random_string" "bucket_suffix" {
   length  = 8
   special = false
